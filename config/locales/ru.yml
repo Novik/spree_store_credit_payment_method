@@ -44,6 +44,7 @@ ru:
     used: Использовано
     created_by: "Выдан"
     issued_on: "Когда"
+    expired_on: "Истекает"
     add_store_credit: "Добавить кредит"    
     memo: "Комментарий"
     payment_amount: Сумма платежа

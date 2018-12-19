@@ -29,7 +29,7 @@ module Spree
     delegate :name, to: :category, prefix: true
     delegate :email, to: :created_by, prefix: true
 
-    scope :order_by_priority, -> { includes(:credit_type).order('spree_store_credit_types.priority ASC') }
+    scope :order_by_priority, -> { order('-spree_store_credit.expired_at desc') }
 
     before_validation :associate_credit_type
     after_save :store_event
@@ -45,8 +45,12 @@ module Spree
       Spree::Money.new(amount_used)
     end
 
+    def expired?
+      expired_at.present? && expired_at <= Time.zone.now
+    end
+
     def amount_remaining
-      amount - amount_used - amount_authorized
+      expired? ? 0 : amount - amount_used - amount_authorized
     end
 
     def authorize(amount, order_currency, options={})
@@ -76,7 +80,7 @@ module Spree
     end
 
     def validate_authorization(amount, order_currency)
-      if amount_remaining.to_d < amount.to_d
+      if (amount_remaining.to_d < amount.to_d) || expired?
         errors.add(:base, Spree.t('store_credit_payment_method.insufficient_funds'))
       elsif currency != order_currency
         errors.add(:base, Spree.t('store_credit_payment_method.currency_mismatch'))
@@ -87,7 +91,7 @@ module Spree
     def capture(amount, authorization_code, order_currency, options={})
       return false unless authorize(amount, order_currency, action_authorization_code: authorization_code)
 
-      if amount <= amount_authorized
+      if amount <= amount_authorized && !expired?
         if currency != order_currency
           errors.add(:base, Spree.t('store_credit_payment_method.currency_mismatch'))
           false
@@ -133,7 +137,7 @@ module Spree
       if currency != order_currency  # sanity check to make sure the order currency hasn't changed since the auth
         errors.add(:base, Spree.t('store_credit_payment_method.currency_mismatch'))
         false
-      elsif capture_event && amount <= capture_event.amount
+      elsif capture_event && amount <= capture_event.amount && !expired?
         action_attributes = {
           action: CREDIT_ACTION,
           action_amount: amount,

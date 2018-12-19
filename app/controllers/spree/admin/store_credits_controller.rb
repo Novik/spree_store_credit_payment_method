@@ -79,7 +79,7 @@ module Spree
       end
 
       def permitted_attributes
-        [:amount, :category_id, :memo]
+        [:amount, :category_id, :memo, :expired_at]
       end
 
       def ensure_unused_store_credit
