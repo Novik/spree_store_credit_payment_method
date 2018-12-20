@@ -29,7 +29,7 @@ module Spree
     delegate :name, to: :category, prefix: true
     delegate :email, to: :created_by, prefix: true
 
-    scope :order_by_priority, -> { order('-spree_store_credit.expired_at desc') }
+    scope :order_by_priority, -> { order('-spree_store_credits.expired_at desc') }
 
     before_validation :associate_credit_type
     after_save :store_event
